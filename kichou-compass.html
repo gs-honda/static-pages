@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>吉方位コンパス | 九星気学</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: #1a1a24;
+      --text-primary: #f0f0f5;
+      --text-secondary: #8888a0;
+      --text-muted: #55556a;
+      --accent-gold: #d4a574;
+      --accent-gold-dim: rgba(212, 165, 116, 0.3);
+      --lucky-green: #4ade80;
+      --lucky-green-dim: rgba(74, 222, 128, 0.15);
+      --warning-red: #f87171;
+      --warning-red-dim: rgba(248, 113, 113, 0.15);
+      --neutral-gray: #6b7280;
+      --ring-outer: rgba(212, 165, 116, 0.08);
+      --ring-inner: rgba(212, 165, 116, 0.12);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Zen Kaku Gothic New', 'Noto Sans JP', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Setup Screen */
+    .setup-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      z-index: 100;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    .setup-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .setup-logo {
+      width: 80px;
+      height: 80px;
+      border: 2px solid var(--accent-gold);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .setup-logo::before {
+      content: '☯';
+      font-size: 2.5rem;
+      color: var(--accent-gold);
+    }
+
+    .setup-title {
+      font-size: 1.5rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .setup-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 3rem;
+      letter-spacing: 0.1em;
+    }
+
+    .setup-form {
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 1rem;
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent-gold);
+    }
+
+    .start-button {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--accent-gold), #c49a6c);
+      border: none;
+      border-radius: 12px;
+      color: var(--bg-primary);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin-top: 1rem;
+    }
+
+    .start-button:active {
+      transform: scale(0.98);
+    }
+
+    .start-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Main App */
+    .app-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      padding-top: env(safe-area-inset-top, 1rem);
+      padding-bottom: env(safe-area-inset-bottom, 1rem);
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      margin-bottom: 0.5rem;
+    }
+
+    .date-display {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.05em;
+    }
+
+    .star-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-card);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .star-badge:hover {
+      background: var(--bg-secondary);
+    }
+
+    .star-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .star-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    /* Compass Section */
+    .compass-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-height: 0;
+    }
+
+    .compass-container {
+      position: relative;
+      width: min(85vw, 380px);
+      height: min(85vw, 380px);
+      flex-shrink: 0;
+    }
+
+    .compass-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid var(--ring-outer);
+      background: radial-gradient(circle at center, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    }
+
+    .compass-ring::before {
+      content: '';
+      position: absolute;
+      inset: 15%;
+      border-radius: 50%;
+      border: 1px solid var(--ring-inner);
+    }
+
+    .compass-ring::after {
+      content: '';
+      position: absolute;
+      inset: 35%;
+      border-radius: 50%;
+      border: 1px solid var(--ring-inner);
+    }
+
+    .compass-dial {
+      position: absolute;
+      inset: 0;
+      transition: transform 0.1s ease-out;
+    }
+
+    .direction-marker {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .direction-marker:hover {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    .direction-marker.lucky .direction-circle {
+      background: var(--lucky-green-dim);
+      border-color: var(--lucky-green);
+      box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+    }
+
+    .direction-marker.lucky .direction-label {
+      color: var(--lucky-green);
+    }
+
+    .direction-marker.unlucky .direction-circle {
+      background: var(--warning-red-dim);
+      border-color: var(--warning-red);
+    }
+
+    .direction-marker.unlucky .direction-label {
+      color: var(--warning-red);
+    }
+
+    .direction-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      background: rgba(255,255,255,0.03);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .direction-kanji {
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .direction-label {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      letter-spacing: 0.05em;
+      transition: color 0.3s ease;
+    }
+
+    /* Center */
+    .compass-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid var(--accent-gold-dim);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .center-star {
+      font-size: 0.625rem;
+      color: var(--text-secondary);
+      margin-bottom: 2px;
+    }
+
+    .center-label {
+      font-size: 0.75rem;
+      color: var(--accent-gold);
+      font-weight: 500;
+    }
+
+    /* Heading Indicator */
+    .heading-indicator {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+    }
+
+    .heading-arrow {
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 14px solid var(--accent-gold);
+      filter: drop-shadow(0 0 6px var(--accent-gold));
+    }
+
+    /* Info Panel */
+    .info-panel {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--bg-card);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+
+    .info-row:not(:last-child) {
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .info-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .info-value {
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .heading-value {
+      font-family: 'SF Mono', 'Monaco', monospace;
+      font-size: 1rem;
+      color: var(--accent-gold);
+    }
+
+    .lucky-directions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .lucky-tag {
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .lucky-tag.good {
+      background: var(--lucky-green-dim);
+      color: var(--lucky-green);
+    }
+
+    .lucky-tag.bad {
+      background: var(--warning-red-dim);
+      color: var(--warning-red);
+    }
+
+    /* Permission overlay */
+    .permission-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .permission-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .permission-icon {
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .permission-text {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+
+    .permission-button {
+      padding: 1rem 2rem;
+      background: var(--accent-gold);
+      border: none;
+      border-radius: 12px;
+      color: var(--bg-primary);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* Direction detail modal */
+    .detail-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 150;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .detail-modal.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .detail-content {
+      background: var(--bg-card);
+      border-radius: 24px 24px 0 0;
+      padding: 2rem;
+      width: 100%;
+      max-width: 420px;
+      max-height: 60vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+    }
+
+    .detail-modal.visible .detail-content {
+      transform: translateY(0);
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .detail-direction-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+
+    .detail-direction-circle.lucky {
+      background: var(--lucky-green-dim);
+      border-color: var(--lucky-green);
+    }
+
+    .detail-direction-circle.unlucky {
+      background: var(--warning-red-dim);
+      border-color: var(--warning-red);
+    }
+
+    .detail-title {
+      flex: 1;
+    }
+
+    .detail-title h3 {
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .detail-title p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .detail-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+
+    .detail-info {
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      margin-bottom: 1rem;
+    }
+
+    .detail-info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+    }
+
+    .detail-info-row:not(:last-child) {
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .detail-info-label {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .detail-info-value {
+      font-weight: 500;
+    }
+
+    .detail-description {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      line-height: 1.8;
+    }
+
+    /* Star colors */
+    .star-1 { background: #3b82f6; color: white; }
+    .star-2 { background: #713f12; color: white; }
+    .star-3 { background: #16a34a; color: white; }
+    .star-4 { background: #22c55e; color: white; }
+    .star-5 { background: #eab308; color: black; }
+    .star-6 { background: #f5f5f5; color: black; }
+    .star-7 { background: #f87171; color: white; }
+    .star-8 { background: #e5e5e5; color: black; }
+    .star-9 { background: #a855f7; color: white; }
+
+    /* Animations */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .loading {
+      animation: pulse 1.5s infinite;
+    }
+
+    /* Responsive */
+    @media (max-height: 700px) {
+      .compass-container {
+        width: min(70vw, 300px);
+        height: min(70vw, 300px);
+      }
+      
+      .direction-circle {
+        width: 36px;
+        height: 36px;
+      }
+      
+      .direction-kanji {
+        font-size: 0.875rem;
+      }
+      
+      .compass-center {
+        width: 56px;
+        height: 56px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Setup Screen -->
+  <div class="setup-screen" id="setupScreen">
+    <div class="setup-logo"></div>
+    <h1 class="setup-title">吉方位コンパス</h1>
+    <p class="setup-subtitle">九星気学</p>
+    
+    <form class="setup-form" id="setupForm">
+      <div class="form-group">
+        <label class="form-label">生年月日</label>
+        <input type="date" class="form-input" id="birthdate" required>
+      </div>
+      <button type="submit" class="start-button" id="startButton">
+        コンパスを開始
+      </button>
+    </form>
+  </div>
+
+  <!-- Permission Overlay -->
+  <div class="permission-overlay" id="permissionOverlay">
+    <div class="permission-icon">🧭</div>
+    <p class="permission-text">
+      コンパス機能を使用するには<br>
+      デバイスの向きへのアクセスを<br>
+      許可してください
+    </p>
+    <button class="permission-button" id="permissionButton">
+      許可する
+    </button>
+  </div>
+
+  <!-- Main App -->
+  <div class="app-container">
+    <header class="header">
+      <div class="date-display" id="dateDisplay">--年--月--日</div>
+      <div class="star-badge" id="starBadge">
+        <div class="star-icon" id="starIcon">-</div>
+        <span class="star-name" id="starName">---</span>
+      </div>
+    </header>
+
+    <section class="compass-section">
+      <div class="compass-container">
+        <div class="heading-indicator">
+          <div class="heading-arrow"></div>
+        </div>
+        
+        <div class="compass-ring"></div>
+        
+        <div class="compass-dial" id="compassDial">
+          <!-- Direction markers will be inserted here -->
+        </div>
+        
+        <div class="compass-center">
+          <span class="center-star" id="centerStar">中宮</span>
+          <span class="center-label" id="centerLabel">-</span>
+        </div>
+      </div>
+      
+      <div class="info-panel">
+        <div class="info-row">
+          <span class="info-label">現在の向き</span>
+          <span class="info-value">
+            <span class="heading-value" id="headingValue">---°</span>
+            <span id="headingDirection">--</span>
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">今日の吉方位</span>
+          <div class="lucky-directions" id="luckyDirections">
+            <!-- Lucky direction tags -->
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Direction Detail Modal -->
+  <div class="detail-modal" id="detailModal">
+    <div class="detail-content">
+      <div class="detail-header">
+        <div class="detail-direction-circle" id="detailCircle">-</div>
+        <div class="detail-title">
+          <h3 id="detailName">--</h3>
+          <p id="detailAngle">--</p>
+        </div>
+        <button class="detail-close" id="detailClose">×</button>
+      </div>
+      <div class="detail-info">
+        <div class="detail-info-row">
+          <span class="detail-info-label">方位の九星</span>
+          <span class="detail-info-value" id="detailStar">--</span>
+        </div>
+        <div class="detail-info-row">
+          <span class="detail-info-label">吉凶</span>
+          <span class="detail-info-value" id="detailLuck">--</span>
+        </div>
+      </div>
+      <p class="detail-description" id="detailDescription"></p>
+    </div>
+  </div>
+
+  <script>
+    // ===== Constants =====
+    const STAR_NAMES = [
+      '', '一白水星', '二黒土星', '三碧木星', '四緑木星', 
+      '五黄土星', '六白金星', '七赤金星', '八白土星', '九紫火星'
+    ];
+    
+    const STAR_SHORT = ['', '一白', '二黒', '三碧', '四緑', '五黄', '六白', '七赤', '八白', '九紫'];
+    
+    const STAR_ELEMENTS = {
+      1: '水', 2: '土', 3: '木', 4: '木', 5: '土', 6: '金', 7: '金', 8: '土', 9: '火'
+    };
+    
+    // 後天定位盤の配置（中宮が5の場合）
+    // 方位: [北, 北東, 東, 南東, 南, 南西, 西, 北西]
+    const BASE_POSITIONS = {
+      north: 1, northeast: 8, east: 3, southeast: 4,
+      south: 9, southwest: 2, west: 7, northwest: 6
+    };
+    
+    const DIRECTIONS = [
+      { key: 'north', kanji: '北', label: 'N', angle: 0, basePos: 1 },
+      { key: 'northeast', kanji: '北東', label: 'NE', angle: 45, basePos: 8 },
+      { key: 'east', kanji: '東', label: 'E', angle: 90, basePos: 3 },
+      { key: 'southeast', kanji: '南東', label: 'SE', angle: 135, basePos: 4 },
+      { key: 'south', kanji: '南', label: 'S', angle: 180, basePos: 9 },
+      { key: 'southwest', kanji: '南西', label: 'SW', angle: 225, basePos: 2 },
+      { key: 'west', kanji: '西', label: 'W', angle: 270, basePos: 7 },
+      { key: 'northwest', kanji: '北西', label: 'NW', angle: 315, basePos: 6 }
+    ];
+
+    // 五行の相生・相剋
+    const ELEMENT_RELATIONS = {
+      '水': { generates: '木', generated_by: '金', controls: '火', controlled_by: '土' },
+      '木': { generates: '火', generated_by: '水', controls: '土', controlled_by: '金' },
+      '火': { generates: '土', generated_by: '木', controls: '金', controlled_by: '水' },
+      '土': { generates: '金', generated_by: '火', controls: '水', controlled_by: '木' },
+      '金': { generates: '水', generated_by: '土', controls: '木', controlled_by: '火' }
+    };
+
+    // ===== State =====
+    let state = {
+      birthdate: null,
+      honmeisei: null,  // 本命星
+      dailyStar: null,  // 日盤の中宮星
+      currentHeading: 0,
+      directionStatus: {},
+      isCompassActive: false
+    };
+
+    // ===== DOM Elements =====
+    const elements = {
+      setupScreen: document.getElementById('setupScreen'),
+      setupForm: document.getElementById('setupForm'),
+      birthdate: document.getElementById('birthdate'),
+      permissionOverlay: document.getElementById('permissionOverlay'),
+      permissionButton: document.getElementById('permissionButton'),
+      dateDisplay: document.getElementById('dateDisplay'),
+      starBadge: document.getElementById('starBadge'),
+      starIcon: document.getElementById('starIcon'),
+      starName: document.getElementById('starName'),
+      compassDial: document.getElementById('compassDial'),
+      centerStar: document.getElementById('centerStar'),
+      centerLabel: document.getElementById('centerLabel'),
+      headingValue: document.getElementById('headingValue'),
+      headingDirection: document.getElementById('headingDirection'),
+      luckyDirections: document.getElementById('luckyDirections'),
+      detailModal: document.getElementById('detailModal'),
+      detailCircle: document.getElementById('detailCircle'),
+      detailName: document.getElementById('detailName'),
+      detailAngle: document.getElementById('detailAngle'),
+      detailStar: document.getElementById('detailStar'),
+      detailLuck: document.getElementById('detailLuck'),
+      detailDescription: document.getElementById('detailDescription'),
+      detailClose: document.getElementById('detailClose')
+    };
+
+    // ===== Calculation Functions =====
+    
+    // 立春判定のための節入り日（簡易版：2月4日を基準）
+    function getLunarYear(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      
+      // 2月4日より前なら前年扱い
+      if (month < 2 || (month === 2 && day < 4)) {
+        return year - 1;
+      }
+      return year;
+    }
+
+    // 本命星を計算（西暦から）
+    function calculateHonmeisei(birthdate) {
+      const lunarYear = getLunarYear(birthdate);
+      
+      // 各桁を足す
+      let sum = String(lunarYear).split('').reduce((a, b) => a + parseInt(b), 0);
+      
+      // 1桁になるまで足す
+      while (sum >= 10) {
+        sum = String(sum).split('').reduce((a, b) => a + parseInt(b), 0);
+      }
+      
+      // 11から引く
+      let star = 11 - sum;
+      if (star > 9) star = star - 9;
+      if (star <= 0) star = star + 9;
+      
+      return star;
+    }
+
+    // 日盤の中宮星を計算
+    function calculateDailyStar(date) {
+      // 基準日: 1936年1月1日 は 一白水星の日
+      // 9日周期で逆順に回る（陽遁・隠遁を簡略化）
+      const baseDate = new Date(1936, 0, 1);
+      const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      
+      const diffTime = targetDate - baseDate;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      // 冬至を境に陽遁・陰遁が切り替わるが、簡易版では陰遁（逆順）で計算
+      // より正確にするには万年暦データが必要
+      let star = 1 - (diffDays % 9);
+      if (star <= 0) star += 9;
+      
+      return star;
+    }
+
+    // 方位盤の星配置を計算（中宮星から）
+    function calculateDirectionStars(centerStar) {
+      const positions = {};
+      const offset = 5 - centerStar; // 5（五黄）からのずれ
+      
+      DIRECTIONS.forEach(dir => {
+        let star = dir.basePos + offset;
+        if (star > 9) star -= 9;
+        if (star <= 0) star += 9;
+        positions[dir.key] = star;
+      });
+      
+      return positions;
+    }
+
+    // 吉凶判定
+    function calculateLuckStatus(honmeisei, directionStars, dailyStar) {
+      const status = {};
+      const honmeiElement = STAR_ELEMENTS[honmeisei];
+      
+      Object.entries(directionStars).forEach(([direction, star]) => {
+        const dirElement = STAR_ELEMENTS[star];
+        let luck = 'neutral';
+        let reason = '';
+        
+        // 五黄殺（その方位に五黄土星がある）
+        if (star === 5) {
+          luck = 'bad';
+          reason = '五黄殺：最も強い凶方位';
+        }
+        // 暗剣殺（五黄の反対方位）
+        else if (isOppositeTo5(direction, directionStars)) {
+          luck = 'bad';
+          reason = '暗剣殺：他者からの災いを受けやすい';
+        }
+        // 本命殺（本命星がある方位）
+        else if (star === honmeisei) {
+          luck = 'bad';
+          reason = '本命殺：健康運に悪影響';
+        }
+        // 本命的殺（本命星の反対方位）
+        else if (isOppositeToHonmei(direction, directionStars, honmeisei)) {
+          luck = 'bad';
+          reason = '本命的殺：精神的なダメージを受けやすい';
+        }
+        // 相生（生気・退気で良い方位）
+        else if (ELEMENT_RELATIONS[honmeiElement]?.generated_by === dirElement ||
+                 ELEMENT_RELATIONS[honmeiElement]?.generates === dirElement) {
+          luck = 'good';
+          reason = dirElement === ELEMENT_RELATIONS[honmeiElement]?.generated_by 
+            ? '生気：エネルギーを受け取れる吉方位'
+            : '退気：穏やかな発展が期待できる方位';
+        }
+        // 比和（同じ五行）
+        else if (honmeiElement === dirElement) {
+          luck = 'good';
+          reason = '比和：同じ気が合わさり力が増す';
+        }
+        
+        status[direction] = { star, luck, reason };
+      });
+      
+      return status;
+    }
+
+    function isOppositeTo5(direction, directionStars) {
+      const opposites = {
+        north: 'south', south: 'north',
+        east: 'west', west: 'east',
+        northeast: 'southwest', southwest: 'northeast',
+        southeast: 'northwest', northwest: 'southeast'
+      };
+      return directionStars[opposites[direction]] === 5;
+    }
+
+    function isOppositeToHonmei(direction, directionStars, honmeisei) {
+      const opposites = {
+        north: 'south', south: 'north',
+        east: 'west', west: 'east',
+        northeast: 'southwest', southwest: 'northeast',
+        southeast: 'northwest', northwest: 'southeast'
+      };
+      return directionStars[opposites[direction]] === honmeisei;
+    }
+
+    // ===== UI Functions =====
+    
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+      const weekday = weekdays[date.getDay()];
+      return `${year}年${month}月${day}日（${weekday}）`;
+    }
+
+    function renderCompassDial() {
+      elements.compassDial.innerHTML = '';
+      const radius = 42; // percentage from center
+      
+      DIRECTIONS.forEach(dir => {
+        const status = state.directionStatus[dir.key] || { star: 0, luck: 'neutral' };
+        const angleRad = (dir.angle - 90) * Math.PI / 180;
+        const x = 50 + radius * Math.cos(angleRad);
+        const y = 50 + radius * Math.sin(angleRad);
+        
+        const marker = document.createElement('div');
+        marker.className = `direction-marker ${status.luck === 'good' ? 'lucky' : ''} ${status.luck === 'bad' ? 'unlucky' : ''}`;
+        marker.style.left = `${x}%`;
+        marker.style.top = `${y}%`;
+        marker.dataset.direction = dir.key;
+        
+        marker.innerHTML = `
+          <div class="direction-circle">
+            <span class="direction-kanji">${dir.kanji}</span>
+          </div>
+          <span class="direction-label">${STAR_SHORT[status.star] || ''}</span>
+        `;
+        
+        marker.addEventListener('click', () => showDirectionDetail(dir));
+        elements.compassDial.appendChild(marker);
+      });
+    }
+
+    function updateUI() {
+      const today = new Date();
+      
+      // Date display
+      elements.dateDisplay.textContent = formatDate(today);
+      
+      // Star badge
+      elements.starIcon.textContent = state.honmeisei;
+      elements.starIcon.className = `star-icon star-${state.honmeisei}`;
+      elements.starName.textContent = STAR_NAMES[state.honmeisei];
+      
+      // Center label
+      elements.centerLabel.textContent = STAR_SHORT[state.dailyStar];
+      
+      // Lucky directions
+      const luckyDirs = DIRECTIONS.filter(d => 
+        state.directionStatus[d.key]?.luck === 'good'
+      );
+      const badDirs = DIRECTIONS.filter(d => 
+        state.directionStatus[d.key]?.luck === 'bad'
+      );
+      
+      elements.luckyDirections.innerHTML = '';
+      
+      if (luckyDirs.length === 0 && badDirs.length === 0) {
+        elements.luckyDirections.innerHTML = '<span class="lucky-tag" style="background: var(--bg-secondary); color: var(--text-secondary);">判定中...</span>';
+      } else {
+        luckyDirs.forEach(d => {
+          const tag = document.createElement('span');
+          tag.className = 'lucky-tag good';
+          tag.textContent = d.kanji;
+          elements.luckyDirections.appendChild(tag);
+        });
+        
+        if (luckyDirs.length === 0) {
+          const tag = document.createElement('span');
+          tag.className = 'lucky-tag';
+          tag.style.background = 'var(--bg-secondary)';
+          tag.style.color = 'var(--text-secondary)';
+          tag.textContent = 'なし';
+          elements.luckyDirections.appendChild(tag);
+        }
+      }
+    }
+
+    function updateHeading(heading) {
+      state.currentHeading = heading;
+      
+      // Rotate compass dial (opposite direction of heading)
+      elements.compassDial.style.transform = `rotate(${-heading}deg)`;
+      
+      // Update heading display
+      elements.headingValue.textContent = `${Math.round(heading)}°`;
+      
+      // Determine cardinal direction
+      const directions = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
+      const index = Math.round(heading / 45) % 8;
+      elements.headingDirection.textContent = directions[index];
+    }
+
+    function showDirectionDetail(dir) {
+      const status = state.directionStatus[dir.key];
+      if (!status) return;
+      
+      elements.detailCircle.textContent = dir.kanji;
+      elements.detailCircle.className = `detail-direction-circle ${status.luck === 'good' ? 'lucky' : ''} ${status.luck === 'bad' ? 'unlucky' : ''}`;
+      elements.detailName.textContent = `${dir.kanji}（${dir.label}）`;
+      elements.detailAngle.textContent = `${dir.angle}°方向`;
+      elements.detailStar.textContent = STAR_NAMES[status.star];
+      
+      if (status.luck === 'good') {
+        elements.detailLuck.textContent = '吉方位';
+        elements.detailLuck.style.color = 'var(--lucky-green)';
+      } else if (status.luck === 'bad') {
+        elements.detailLuck.textContent = '凶方位';
+        elements.detailLuck.style.color = 'var(--warning-red)';
+      } else {
+        elements.detailLuck.textContent = '普通';
+        elements.detailLuck.style.color = 'var(--text-secondary)';
+      }
+      
+      elements.detailDescription.textContent = status.reason || 
+        '特に大きな吉凶の影響はありません。通常の行動は問題ありません。';
+      
+      elements.detailModal.classList.add('visible');
+    }
+
+    function hideDirectionDetail() {
+      elements.detailModal.classList.remove('visible');
+    }
+
+    // ===== Compass / Sensor Functions =====
+    
+    function startCompass() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && 
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS 13+ requires permission
+        elements.permissionOverlay.classList.add('visible');
+      } else {
+        // Android or older iOS
+        initCompass();
+      }
+    }
+
+    async function requestPermission() {
+      try {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        elements.permissionOverlay.classList.remove('visible');
+        
+        if (permission === 'granted') {
+          initCompass();
+        } else {
+          alert('コンパス機能を使用するには、デバイスの向きへのアクセスを許可してください。');
+        }
+      } catch (error) {
+        console.error('Permission error:', error);
+        elements.permissionOverlay.classList.remove('visible');
+        // Fallback to manual mode
+        initManualMode();
+      }
+    }
+
+    function initCompass() {
+      state.isCompassActive = true;
+      
+      window.addEventListener('deviceorientation', (event) => {
+        let heading;
+        
+        if (event.webkitCompassHeading !== undefined) {
+          // iOS
+          heading = event.webkitCompassHeading;
+        } else if (event.alpha !== null) {
+          // Android
+          heading = 360 - event.alpha;
+        } else {
+          return;
+        }
+        
+        updateHeading(heading);
+      }, true);
+    }
+
+    function initManualMode() {
+      // For devices without compass, allow manual rotation
+      let startAngle = 0;
+      let currentAngle = 0;
+      
+      elements.compassDial.style.transition = 'none';
+      
+      // Touch events for manual rotation would go here
+      console.log('Manual mode initialized - compass sensor not available');
+      updateHeading(0);
+    }
+
+    // ===== Event Handlers =====
+    
+    elements.setupForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const birthdateValue = elements.birthdate.value;
+      if (!birthdateValue) return;
+      
+      state.birthdate = new Date(birthdateValue);
+      state.honmeisei = calculateHonmeisei(state.birthdate);
+      
+      const today = new Date();
+      state.dailyStar = calculateDailyStar(today);
+      
+      const directionStars = calculateDirectionStars(state.dailyStar);
+      state.directionStatus = calculateLuckStatus(state.honmeisei, directionStars, state.dailyStar);
+      
+      // Save to localStorage
+      localStorage.setItem('kichou_birthdate', birthdateValue);
+      
+      // Hide setup screen
+      elements.setupScreen.classList.add('hidden');
+      
+      // Render UI
+      renderCompassDial();
+      updateUI();
+      
+      // Start compass
+      startCompass();
+    });
+
+    elements.permissionButton.addEventListener('click', requestPermission);
+    
+    elements.detailClose.addEventListener('click', hideDirectionDetail);
+    elements.detailModal.addEventListener('click', (e) => {
+      if (e.target === elements.detailModal) {
+        hideDirectionDetail();
+      }
+    });
+
+    elements.starBadge.addEventListener('click', () => {
+      // Reset and show setup screen
+      elements.setupScreen.classList.remove('hidden');
+    });
+
+    // ===== Initialization =====
+    
+    function init() {
+      // Check for saved birthdate
+      const savedBirthdate = localStorage.getItem('kichou_birthdate');
+      
+      if (savedBirthdate) {
+        elements.birthdate.value = savedBirthdate;
+        
+        // Auto-start if we have saved data
+        state.birthdate = new Date(savedBirthdate);
+        state.honmeisei = calculateHonmeisei(state.birthdate);
+        
+        const today = new Date();
+        state.dailyStar = calculateDailyStar(today);
+        
+        const directionStars = calculateDirectionStars(state.dailyStar);
+        state.directionStatus = calculateLuckStatus(state.honmeisei, directionStars, state.dailyStar);
+        
+        elements.setupScreen.classList.add('hidden');
+        renderCompassDial();
+        updateUI();
+        startCompass();
+      }
+      
+      // Set default date to reasonable range
+      const maxDate = new Date();
+      const minDate = new Date(1920, 0, 1);
+      elements.birthdate.max = maxDate.toISOString().split('T')[0];
+      elements.birthdate.min = minDate.toISOString().split('T')[0];
+    }
+
+    init();
+  </script>
+</body>
+</html>
