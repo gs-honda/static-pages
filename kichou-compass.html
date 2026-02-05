@@ -792,6 +792,427 @@
     // ===== State =====
     let state = {
       birthdate: null,
+      honmeisei: null,
+      dailyStar: null,
+      currentHeading: 0,
+      directionStatus: {},
+      isCompassActive: false,
+      usingMannenreki: false
+    };
+
+    // ===== DOM Elements =====
+    const elements = {
+      setupScreen: document.getElementById('setupScreen'),
+      setupForm: document.getElementById('setupForm'),
+      birthdate: document.getElementById('birthdate'),
+      permissionOverlay: document.getElementById('permissionOverlay'),
+      permissionButton: document.getElementById('permissionButton'),
+      dateDisplay: document.getElementById('dateDisplay'),
+      starBadge: document.getElementById('starBadge'),
+      starIcon: document.getElementById('starIcon'),
+      starName: document.getElementById('starName'),
+      compassDial: document.getElementById('compassDial'),
+      centerStar: document.getElementById('centerStar'),
+      centerLabel: document.getElementById('centerLabel'),
+      headingValue: document.getElementById('headingValue'),
+      headingDirection: document.getElementById('headingDirection'),
+      luckyDirections: document.getElementById('luckyDirections'),
+      detailModal: document.getElementById('detailModal'),
+      detailCircle: document.getElementById('detailCircle'),
+      detailName: document.getElementById('detailName'),
+      detailAngle: document.getElementById('detailAngle'),
+      detailStar: document.getElementById('detailStar'),
+      detailLuck: document.getElementById('detailLuck'),
+      detailDescription: document.getElementById('detailDescription'),
+      detailClose: document.getElementById('detailClose'),
+      dataSource: document.getElementById('dataSource')
+    };
+
+    // ===== Calculation Functions =====
+    
+    function formatDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}${m}${d}`;
+    }
+
+    function getLunarYear(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      if (month < 2 || (month === 2 && day < 4)) {
+        return year - 1;
+      }
+      return year;
+    }
+
+    function getHonmeisei(birthdate) {
+      const lunarYear = getLunarYear(birthdate);
+      if (HONMEISEI_TABLE[lunarYear]) {
+        return HONMEISEI_TABLE[lunarYear];
+      }
+      // フォールバック計算
+      let sum = String(lunarYear).split('').reduce((a, b) => a + parseInt(b), 0);
+      while (sum >= 10) {
+        sum = String(sum).split('').reduce((a, b) => a + parseInt(b), 0);
+      }
+      let star = 11 - sum;
+      if (star > 9) star -= 9;
+      if (star <= 0) star += 9;
+      return star;
+    }
+
+    function getDailyStar(date) {
+      const key = formatDateKey(date);
+      if (MANNENREKI[key]) {
+        state.usingMannenreki = true;
+        return MANNENREKI[key];
+      }
+      // フォールバック計算（万年暦にない日付の場合）
+      state.usingMannenreki = false;
+      const baseDate = new Date(2025, 0, 1);
+      const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const diffTime = targetDate - baseDate;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      // 2025年1月1日は七赤金星（7）
+      let star = (7 + diffDays) % 9;
+      if (star <= 0) star += 9;
+      return star;
+    }
+
+    function calculateDirectionStars(centerStar) {
+      const positions = {};
+      const offset = 5 - centerStar;
+      
+      DIRECTIONS.forEach(dir => {
+        let star = dir.basePos + offset;
+        if (star > 9) star -= 9;
+        if (star <= 0) star += 9;
+        positions[dir.key] = star;
+      });
+      
+      return positions;
+    }
+
+    function calculateLuckStatus(honmeisei, directionStars, dailyStar) {
+      const status = {};
+      const honmeiElement = STAR_ELEMENTS[honmeisei];
+      
+      Object.entries(directionStars).forEach(([direction, star]) => {
+        const dirElement = STAR_ELEMENTS[star];
+        let luck = 'neutral';
+        let reason = '';
+        
+        if (star === 5) {
+          luck = 'bad';
+          reason = '五黄殺：最も強い凶方位です。この方角への移動や行動は避けましょう。';
+        }
+        else if (isOppositeTo5(direction, directionStars)) {
+          luck = 'bad';
+          reason = '暗剣殺：他者からの災いを受けやすい方位です。トラブルに注意。';
+        }
+        else if (star === honmeisei) {
+          luck = 'bad';
+          reason = '本命殺：あなたの本命星がある方位。健康運に悪影響を及ぼします。';
+        }
+        else if (isOppositeToHonmei(direction, directionStars, honmeisei)) {
+          luck = 'bad';
+          reason = '本命的殺：本命星の反対方位。精神的なダメージを受けやすくなります。';
+        }
+        else if (ELEMENT_RELATIONS[honmeiElement]?.generated_by === dirElement) {
+          luck = 'good';
+          reason = '生気：あなたにエネルギーを与えてくれる最良の吉方位です。';
+        }
+        else if (ELEMENT_RELATIONS[honmeiElement]?.generates === dirElement) {
+          luck = 'good';
+          reason = '退気：穏やかな発展が期待できる吉方位です。';
+        }
+        else if (honmeiElement === dirElement) {
+          luck = 'good';
+          reason = '比和：同じ気が合わさり力が増す吉方位です。';
+        }
+        
+        status[direction] = { star, luck, reason };
+      });
+      
+      return status;
+    }
+
+    function isOppositeTo5(direction, directionStars) {
+      const opposites = {
+        north: 'south', south: 'north',
+        east: 'west', west: 'east',
+        northeast: 'southwest', southwest: 'northeast',
+        southeast: 'northwest', northwest: 'southeast'
+      };
+      return directionStars[opposites[direction]] === 5;
+    }
+
+    function isOppositeToHonmei(direction, directionStars, honmeisei) {
+      const opposites = {
+        north: 'south', south: 'north',
+        east: 'west', west: 'east',
+        northeast: 'southwest', southwest: 'northeast',
+        southeast: 'northwest', northwest: 'southeast'
+      };
+      return directionStars[opposites[direction]] === honmeisei;
+    }
+
+    // ===== UI Functions =====
+    
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+      const weekday = weekdays[date.getDay()];
+      return `${year}年${month}月${day}日（${weekday}）`;
+    }
+
+    function renderCompassDial() {
+      elements.compassDial.innerHTML = '';
+      const radius = 42;
+      
+      DIRECTIONS.forEach(dir => {
+        const status = state.directionStatus[dir.key] || { star: 0, luck: 'neutral' };
+        const angleRad = (dir.angle - 90) * Math.PI / 180;
+        const x = 50 + radius * Math.cos(angleRad);
+        const y = 50 + radius * Math.sin(angleRad);
+        
+        const marker = document.createElement('div');
+        marker.className = `direction-marker ${status.luck === 'good' ? 'lucky' : ''} ${status.luck === 'bad' ? 'unlucky' : ''}`;
+        marker.style.left = `${x}%`;
+        marker.style.top = `${y}%`;
+        marker.dataset.direction = dir.key;
+        
+        marker.innerHTML = `
+          <div class="direction-circle">
+            <span class="direction-kanji">${dir.kanji}</span>
+          </div>
+          <span class="direction-label">${STAR_SHORT[status.star] || ''}</span>
+        `;
+        
+        marker.addEventListener('click', () => showDirectionDetail(dir));
+        elements.compassDial.appendChild(marker);
+      });
+    }
+
+    function updateUI() {
+      const today = new Date();
+      
+      elements.dateDisplay.textContent = formatDate(today);
+      elements.starIcon.textContent = state.honmeisei;
+      elements.starIcon.className = `star-icon star-${state.honmeisei}`;
+      elements.starName.textContent = STAR_NAMES[state.honmeisei];
+      elements.centerLabel.textContent = STAR_SHORT[state.dailyStar];
+      
+      // データソース表示
+      elements.dataSource.textContent = state.usingMannenreki 
+        ? '万年暦データ使用（2024-2028年）' 
+        : '計算値（万年暦範囲外）';
+      
+      const luckyDirs = DIRECTIONS.filter(d => 
+        state.directionStatus[d.key]?.luck === 'good'
+      );
+      
+      elements.luckyDirections.innerHTML = '';
+      
+      if (luckyDirs.length === 0) {
+        const tag = document.createElement('span');
+        tag.className = 'lucky-tag';
+        tag.style.background = 'var(--bg-secondary)';
+        tag.style.color = 'var(--text-secondary)';
+        tag.textContent = 'なし';
+        elements.luckyDirections.appendChild(tag);
+      } else {
+        luckyDirs.forEach(d => {
+          const tag = document.createElement('span');
+          tag.className = 'lucky-tag good';
+          tag.textContent = d.kanji;
+          elements.luckyDirections.appendChild(tag);
+        });
+      }
+    }
+
+    function updateHeading(heading) {
+      state.currentHeading = heading;
+      elements.compassDial.style.transform = `rotate(${-heading}deg)`;
+      elements.headingValue.textContent = `${Math.round(heading)}°`;
+      
+      const directions = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
+      const index = Math.round(heading / 45) % 8;
+      elements.headingDirection.textContent = directions[index];
+    }
+
+    function showDirectionDetail(dir) {
+      const status = state.directionStatus[dir.key];
+      if (!status) return;
+      
+      elements.detailCircle.textContent = dir.kanji;
+      elements.detailCircle.className = `detail-direction-circle ${status.luck === 'good' ? 'lucky' : ''} ${status.luck === 'bad' ? 'unlucky' : ''}`;
+      elements.detailName.textContent = `${dir.kanji}（${dir.label}）`;
+      elements.detailAngle.textContent = `${dir.angle}°方向`;
+      elements.detailStar.textContent = STAR_NAMES[status.star];
+      
+      if (status.luck === 'good') {
+        elements.detailLuck.textContent = '吉方位';
+        elements.detailLuck.style.color = 'var(--lucky-green)';
+      } else if (status.luck === 'bad') {
+        elements.detailLuck.textContent = '凶方位';
+        elements.detailLuck.style.color = 'var(--warning-red)';
+      } else {
+        elements.detailLuck.textContent = '普通';
+        elements.detailLuck.style.color = 'var(--text-secondary)';
+      }
+      
+      elements.detailDescription.textContent = status.reason || 
+        '特に大きな吉凶の影響はありません。通常の行動は問題ありません。';
+      
+      elements.detailModal.classList.add('visible');
+    }
+
+    function hideDirectionDetail() {
+      elements.detailModal.classList.remove('visible');
+    }
+
+    // ===== Compass / Sensor Functions =====
+    
+    function startCompass() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && 
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        elements.permissionOverlay.classList.add('visible');
+      } else {
+        initCompass();
+      }
+    }
+
+    async function requestPermission() {
+      try {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        elements.permissionOverlay.classList.remove('visible');
+        
+        if (permission === 'granted') {
+          initCompass();
+        } else {
+          alert('コンパス機能を使用するには、デバイスの向きへのアクセスを許可してください。');
+        }
+      } catch (error) {
+        console.error('Permission error:', error);
+        elements.permissionOverlay.classList.remove('visible');
+        initManualMode();
+      }
+    }
+
+    function initCompass() {
+      state.isCompassActive = true;
+      
+      window.addEventListener('deviceorientation', (event) => {
+        let heading;
+        
+        if (event.webkitCompassHeading !== undefined) {
+          heading = event.webkitCompassHeading;
+        } else if (event.alpha !== null) {
+          heading = 360 - event.alpha;
+        } else {
+          return;
+        }
+        
+        updateHeading(heading);
+      }, true);
+    }
+
+    function initManualMode() {
+      console.log('Manual mode initialized - compass sensor not available');
+      updateHeading(0);
+    }
+
+    // ===== Event Handlers =====
+    
+    elements.setupForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const birthdateValue = elements.birthdate.value;
+      if (!birthdateValue) return;
+      
+      state.birthdate = new Date(birthdateValue);
+      state.honmeisei = getHonmeisei(state.birthdate);
+      
+      const today = new Date();
+      state.dailyStar = getDailyStar(today);
+      
+      const directionStars = calculateDirectionStars(state.dailyStar);
+      state.directionStatus = calculateLuckStatus(state.honmeisei, directionStars, state.dailyStar);
+      
+      localStorage.setItem('kichou_birthdate', birthdateValue);
+      
+      elements.setupScreen.classList.add('hidden');
+      
+      renderCompassDial();
+      updateUI();
+      startCompass();
+    });
+
+    elements.permissionButton.addEventListener('click', requestPermission);
+    
+    elements.detailClose.addEventListener('click', hideDirectionDetail);
+    elements.detailModal.addEventListener('click', (e) => {
+      if (e.target === elements.detailModal) {
+        hideDirectionDetail();
+      }
+    });
+
+    elements.starBadge.addEventListener('click', () => {
+      elements.setupScreen.classList.remove('hidden');
+    });
+
+    // ===== Initialization =====
+    
+    function init() {
+      const savedBirthdate = localStorage.getItem('kichou_birthdate');
+      
+      if (savedBirthdate) {
+        elements.birthdate.value = savedBirthdate;
+        
+        state.birthdate = new Date(savedBirthdate);
+        state.honmeisei = getHonmeisei(state.birthdate);
+        
+        const today = new Date();
+        state.dailyStar = getDailyStar(today);
+        
+        const directionStars = calculateDirectionStars(state.dailyStar);
+        state.directionStatus = calculateLuckStatus(state.honmeisei, directionStars, state.dailyStar);
+        
+        elements.setupScreen.classList.add('hidden');
+        renderCompassDial();
+        updateUI();
+        startCompass();
+      }
+      
+      const maxDate = new Date();
+      const minDate = new Date(1920, 0, 1);
+      elements.birthdate.max = maxDate.toISOString().split('T')[0];
+      elements.birthdate.min = minDate.toISOString().split('T')[0];
+    }
+
+    init();
+  </script>
+</body>
+</html> kanji: '北西', label: 'NW', angle: 315, basePos: 6 }
+    ];
+
+    // 五行の相生・相剋
+    const ELEMENT_RELATIONS = {
+      '水': { generates: '木', generated_by: '金', controls: '火', controlled_by: '土' },
+      '木': { generates: '火', generated_by: '水', controls: '土', controlled_by: '金' },
+      '火': { generates: '土', generated_by: '木', controls: '金', controlled_by: '水' },
+      '土': { generates: '金', generated_by: '火', controls: '水', controlled_by: '木' },
+      '金': { generates: '水', generated_by: '土', controls: '木', controlled_by: '火' }
+    };
+
+    // ===== State =====
+    let state = {
+      birthdate: null,
       honmeisei: null,  // 本命星
       dailyStar: null,  // 日盤の中宮星
       currentHeading: 0,
