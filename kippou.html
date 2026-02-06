@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>吉方位コンパス ─ 九星気学</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;600;700&family=Shippori+Mincho:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #FAF8F5;
+    --bg-warm: #F5F0E8;
+    --ink: #2C2420;
+    --ink-light: #6B5E55;
+    --ink-faint: #A89B90;
+    --accent: #B8443B;
+    --accent-light: #D4726A;
+    --gold: #C4A265;
+    --gold-light: #DEC48D;
+    --kichi: #2E7D4F;
+    --kichi-light: #4CAF50;
+    --kichi-bg: rgba(46, 125, 79, 0.08);
+    --kyou: #8B3A3A;
+    --shadow: 0 2px 20px rgba(44,36,32,0.08);
+    --shadow-lg: 0 8px 40px rgba(44,36,32,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Shippori Mincho', 'Noto Serif JP', serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ═══ Decorative background ═══ */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(196,162,101,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 100%, rgba(184,68,59,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  /* ═══ Header ═══ */
+  header {
+    text-align: center;
+    padding: 40px 0 24px;
+  }
+
+  header .mon {
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  header h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-weight: 700;
+    font-size: 28px;
+    letter-spacing: 4px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  header .sub {
+    font-size: 12px;
+    color: var(--ink-light);
+    letter-spacing: 2px;
+  }
+
+  .divider {
+    width: 40px;
+    height: 1px;
+    background: var(--gold);
+    margin: 20px auto;
+  }
+
+  .divider-wide {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+    margin: 28px 0;
+  }
+
+  /* ═══ Birthday Input Section ═══ */
+  .input-section {
+    background: white;
+    border-radius: 16px;
+    padding: 28px 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(196,162,101,0.15);
+    margin-bottom: 24px;
+  }
+
+  .input-section h2 {
+    font-size: 15px;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+    color: var(--ink);
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .input-row select, .input-row input {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 15px;
+    padding: 10px 12px;
+    border: 1px solid #DDD5CB;
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.3s;
+    -webkit-appearance: none;
+  }
+
+  .input-row select:focus, .input-row input:focus {
+    border-color: var(--gold);
+  }
+
+  .input-row select { width: 100px; }
+  .input-row .lbl { font-size: 13px; color: var(--ink-light); flex-shrink: 0; }
+
+  .btn-primary {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    color: white;
+    background: linear-gradient(135deg, var(--accent) 0%, #9B3630 100%);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(184,68,59,0.25);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
+
+  /* ═══ Result Card ═══ */
+  .result-card {
+    background: white;
+    border-radius: 16px;
+    padding: 28px 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(196,162,101,0.15);
+    margin-bottom: 24px;
+    display: none;
+    animation: fadeUp 0.5s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .star-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .star-badge .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+  }
+
+  .star-badge .name {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 2px;
+  }
+
+  .star-colors {
+    --ippaku: #1A5276;
+    --jikoku: #8B6914;
+    --sanpeki: #1B7A3D;
+    --shiroku: #2E8B57;
+    --goou: #B8860B;
+    --roppaku: #C0C0C0;
+    --shichiseki: #CD853F;
+    --happaku: #F5F5DC;
+    --kushi: #8B2252;
+  }
+
+  .direction-info {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .direction-info .year-label {
+    font-size: 13px;
+    color: var(--ink-light);
+    letter-spacing: 1px;
+  }
+
+  .direction-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+  .direction-tag {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 1px;
+  }
+
+  .direction-tag.kichi {
+    background: var(--kichi-bg);
+    color: var(--kichi);
+    border: 1px solid rgba(46,125,79,0.2);
+  }
+
+  .direction-tag.none {
+    background: #F5F0E8;
+    color: var(--ink-faint);
+    border: 1px solid #E0D8CE;
+  }
+
+  .year-selector {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .year-btn {
+    padding: 8px 18px;
+    border: 1px solid #DDD5CB;
+    border-radius: 20px;
+    background: var(--bg);
+    font-family: 'Shippori Mincho', serif;
+    font-size: 13px;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .year-btn.active {
+    background: var(--ink);
+    color: white;
+    border-color: var(--ink);
+  }
+
+  /* ═══ Compass Section ═══ */
+  .compass-section {
+    background: white;
+    border-radius: 16px;
+    padding: 28px 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(196,162,101,0.15);
+    margin-bottom: 24px;
+    display: none;
+    animation: fadeUp 0.5s ease;
+  }
+
+  .compass-section h2 {
+    font-size: 15px;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+
+  .compass-note {
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .compass-wrap {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    margin: 0 auto;
+  }
+
+  .compass-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid #E8E0D5;
+    transition: transform 0.15s ease-out;
+  }
+
+  .compass-ring::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    border: 1px solid #EDE7DE;
+  }
+
+  /* Direction labels on the compass */
+  .compass-dir {
+    position: absolute;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-light);
+    letter-spacing: 1px;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s;
+  }
+
+  .compass-dir.kichi-dir {
+    background: var(--kichi);
+    color: white;
+    box-shadow: 0 2px 8px rgba(46,125,79,0.3);
+    font-size: 13px;
+  }
+
+  .compass-dir[data-dir="N"] { top: 6%; left: 50%; }
+  .compass-dir[data-dir="NE"] { top: 16%; left: 84%; }
+  .compass-dir[data-dir="E"] { top: 50%; left: 94%; }
+  .compass-dir[data-dir="SE"] { top: 84%; left: 84%; }
+  .compass-dir[data-dir="S"] { top: 94%; left: 50%; }
+  .compass-dir[data-dir="SW"] { top: 84%; left: 16%; }
+  .compass-dir[data-dir="W"] { top: 50%; left: 6%; }
+  .compass-dir[data-dir="NW"] { top: 16%; left: 16%; }
+
+  /* Lucky direction sectors */
+  .compass-sector {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    z-index: 1;
+  }
+
+  .compass-sector .sector-fill {
+    position: absolute;
+    width: 130px;
+    height: 130px;
+    top: -130px;
+    left: -6px;
+    transform-origin: bottom center;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+
+  .compass-sector .sector-fill.active {
+    opacity: 1;
+  }
+
+  /* Center point */
+  .compass-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #E8E0D5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+
+  .compass-center-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* North needle */
+  .compass-needle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 120px;
+    transform: translate(-50%, -100%);
+    z-index: 4;
+    pointer-events: none;
+    transition: transform 0.15s ease-out;
+  }
+
+  .needle-n {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 110px solid var(--accent);
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  }
+
+  .needle-s {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 110px solid var(--ink-faint);
+    position: absolute;
+    bottom: -110px;
+    left: 50%;
+    transform: translateX(-50%);
+    clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
+  }
+
+  .compass-heading {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--ink);
+    letter-spacing: 2px;
+    font-family: 'Noto Serif JP', serif;
+  }
+
+  .compass-heading .deg { font-size: 18px; }
+
+  .compass-status {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 4px;
+  }
+
+  .compass-status.good {
+    color: var(--kichi);
+  }
+
+  /* Compass SVG overlay */
+  .compass-svg {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  /* ═══ Monthly table ═══ */
+  .monthly-section {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 16px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(196,162,101,0.15);
+    margin-bottom: 24px;
+    display: none;
+    animation: fadeUp 0.5s ease;
+  }
+
+  .monthly-section h2 {
+    font-size: 15px;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+  }
+
+  .monthly-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .monthly-table th {
+    padding: 8px 4px;
+    background: var(--bg-warm);
+    color: var(--ink-light);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #E8E0D5;
+  }
+
+  .monthly-table td {
+    padding: 10px 4px;
+    text-align: center;
+    border-bottom: 1px solid #F0EBE3;
+    vertical-align: middle;
+  }
+
+  .monthly-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .monthly-table .month-cell {
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .monthly-table .dir-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+  }
+
+  .mini-tag {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    background: var(--kichi-bg);
+    color: var(--kichi);
+    white-space: nowrap;
+  }
+
+  .mini-tag.none-tag {
+    background: #F5F0E8;
+    color: var(--ink-faint);
+  }
+
+  /* ═══ Info section ═══ */
+  .info-section {
+    background: var(--bg-warm);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .info-section h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+    color: var(--ink);
+  }
+
+  .info-section p {
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--ink-light);
+  }
+
+  /* ═══ Footer ═══ */
+  footer {
+    text-align: center;
+    padding: 24px 0;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 1px;
+  }
+
+  /* ═══ Animations ═══ */
+  .pulse-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 1px solid var(--kichi-light);
+    opacity: 0;
+    z-index: 3;
+    animation: pulse 2s ease-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes pulse {
+    0% { width: 60px; height: 60px; opacity: 0.5; }
+    100% { width: 200px; height: 200px; opacity: 0; }
+  }
+
+  /* Disclaimer */
+  .disclaimer {
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-align: center;
+    line-height: 1.7;
+    padding: 16px 0;
+  }
+
+  /* Saved indicator */
+  .saved-indicator {
+    display: none;
+    text-align: center;
+    font-size: 12px;
+    color: var(--kichi);
+    margin-top: 8px;
+    animation: fadeUp 0.3s;
+  }
+
+  /* Permission button */
+  .btn-compass {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid #DDD5CB;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 2px;
+    margin-top: 12px;
+  }
+
+  .btn-compass:active {
+    background: #EDE7DE;
+  }
+
+  /* Kichi Direction in facing text */
+  .facing-kichi {
+    display: inline-block;
+    padding: 2px 10px;
+    background: var(--kichi-bg);
+    color: var(--kichi);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    margin: 4px 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="mon">九 星 気 学</div>
+    <h1>吉方位コンパス</h1>
+    <div class="sub">Lucky Direction Compass</div>
+    <div class="divider"></div>
+  </header>
+
+  <!-- Birthday Input -->
+  <div class="input-section" id="inputSection">
+    <h2>生年月日を入力</h2>
+    <div class="input-row">
+      <select id="yearSelect"></select>
+      <span class="lbl">年</span>
+      <select id="monthSelect"></select>
+      <span class="lbl">月</span>
+      <select id="daySelect"></select>
+      <span class="lbl">日</span>
+    </div>
+    <button class="btn-primary" onclick="calculateStar()">吉方位を調べる</button>
+    <div class="saved-indicator" id="savedMsg">✓ 生年月日を保存しました</div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <div class="star-badge">
+      <div class="icon" id="starIcon"></div>
+      <div class="name" id="starName"></div>
+    </div>
+    <div class="divider-wide"></div>
+    <div class="year-selector" id="yearSelector"></div>
+    <div class="direction-info">
+      <div class="year-label" id="yearLabel"></div>
+      <div class="direction-tags" id="directionTags"></div>
+    </div>
+  </div>
+
+  <!-- Compass -->
+  <div class="compass-section" id="compassSection">
+    <h2>方位コンパス</h2>
+    <div class="compass-note" id="compassNote">端末の方位センサーと連動します</div>
+    <div class="compass-wrap" id="compassWrap">
+      <div class="compass-ring" id="compassRing">
+        <!-- Direction labels -->
+        <div class="compass-dir" data-dir="N">北</div>
+        <div class="compass-dir" data-dir="NE">艮</div>
+        <div class="compass-dir" data-dir="E">東</div>
+        <div class="compass-dir" data-dir="SE">巽</div>
+        <div class="compass-dir" data-dir="S">南</div>
+        <div class="compass-dir" data-dir="SW">坤</div>
+        <div class="compass-dir" data-dir="W">西</div>
+        <div class="compass-dir" data-dir="NW">乾</div>
+
+        <!-- SVG sectors for lucky directions -->
+        <svg class="compass-svg" viewBox="0 0 300 300">
+          <defs>
+            <linearGradient id="kichiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:rgba(46,125,79,0.15)"/>
+              <stop offset="100%" style="stop-color:rgba(46,125,79,0.05)"/>
+            </linearGradient>
+          </defs>
+          <!-- Sectors will be added by JS -->
+          <g id="sectorGroup"></g>
+        </svg>
+      </div>
+
+      <!-- Needle -->
+      <div class="compass-needle" id="compassNeedle">
+        <div class="needle-n"></div>
+        <div class="needle-s"></div>
+      </div>
+
+      <!-- Center -->
+      <div class="compass-center">
+        <div class="compass-center-dot"></div>
+      </div>
+      <div class="pulse-ring"></div>
+    </div>
+
+    <div class="compass-heading" id="compassHeading">---<span class="deg">°</span></div>
+    <div class="compass-status" id="compassStatus">コンパスを起動してください</div>
+    <button class="btn-compass" id="compassBtn" onclick="startCompass()">コンパスを起動する</button>
+  </div>
+
+  <!-- Monthly Table -->
+  <div class="monthly-section" id="monthlySection">
+    <h2 id="monthlyTitle">月別吉方位</h2>
+    <table class="monthly-table">
+      <thead>
+        <tr>
+          <th>月</th>
+          <th>吉方位</th>
+        </tr>
+      </thead>
+      <tbody id="monthlyBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Info -->
+  <div class="info-section">
+    <h3>九星気学とは</h3>
+    <p>九星気学は、生まれた年月日から「本命星」を導き出し、その星と方位の相性から吉凶を判断する日本の伝統的な方位学です。立春（2月4日頃）を年の境とし、それ以前に生まれた方は前年の九星となります。吉方位へ移動することで良い気を取り込み、運気向上に繋がるとされています。</p>
+  </div>
+
+  <div class="disclaimer">
+    ※方位データは九星気学の一般的な年盤に基づく参考情報です<br>
+    ※コンパスの精度は端末に依存します<br>
+    ※月命星による最大吉方は含まれていません
+  </div>
+
+  <footer>
+    吉方位コンパス &copy; 2026
+  </footer>
+</div>
+
+<script>
+// ════════════════════════════════
+//  九星気学 吉方位データ (2026-2028)
+//  年盤ベースの本命星別吉方位
+// ════════════════════════════════
+
+const KIPPOU_DATA = {
+  // 2026年: 一白中宮 / 五黄殺:南 / 暗剣殺:北 / 歳破:北
+  "2026": {
+    "一白水星": { year: ["北東","南西"], monthly: {
+      "2月":["南東"], "3月":["北東","南西"], "4月":["東","西"], "5月":["北西"],
+      "6月":["南西"], "7月":["東","西","北西"], "8月":["南東"], "9月":["南西"],
+      "10月":[], "11月":["南東"], "12月":["東","北西"], "1月":["北東","南西"]
+    }},
+    "二黒土星": { year: ["東","南西"], monthly: {
+      "2月":["東","南東","北西"], "3月":[], "4月":["南西"], "5月":["北東","南西"],
+      "6月":["東","西"], "7月":[], "8月":["南東","北西"], "9月":["東","西"],
+      "10月":["東","南東","西","北西"], "11月":["南東","南西","北西"], "12月":["北東"],
+      "1月":[]
+    }},
+    "三碧木星": { year: ["北東","南東"], monthly: {
+      "2月":[], "3月":["東","南東"], "4月":[], "5月":["北東"],
+      "6月":["東"], "7月":["南西"], "8月":["南東","北西"], "9月":["北東","南西"],
+      "10月":["東","南東","北西"], "11月":["南東","北西"], "12月":["北東"],
+      "1月":["北東"]
+    }},
+    "四緑木星": { year: ["南東"], monthly: {
+      "2月":[], "3月":["南東"], "4月":[], "5月":[],
+      "6月":[], "7月":["南西"], "8月":["南東"], "9月":["南西"],
+      "10月":["南東"], "11月":["南東"], "12月":[],
+      "1月":[]
+    }},
+    "五黄土星": { year: ["東","南東","南西","北西"], monthly: {
+      "2月":["東","南東","北西"], "3月":["南東"], "4月":["東","南西"], "5月":["北東","南西","北西"],
+      "6月":["東","西"], "7月":["東","北西"], "8月":["南東","北西"], "9月":["東","南西"],
+      "10月":["東","南東","北西"], "11月":["南東","南西","北西"], "12月":["北東","東","北西"],
+      "1月":["南西"]
+    }},
+    "六白金星": { year: ["東","南西","北西"], monthly: {
+      "2月":["東","北西"], "3月":[], "4月":["東","西"], "5月":["北西"],
+      "6月":["南西"], "7月":["東","西","北西"], "8月":["南東"], "9月":["南西"],
+      "10月":[], "11月":["南東"], "12月":["東","西","北西"],
+      "1月":["南西"]
+    }},
+    "七赤金星": { year: ["東","北西"], monthly: {
+      "2月":["東","北西"], "3月":[], "4月":["東","西"], "5月":["北西"],
+      "6月":[], "7月":["東","北西"], "8月":[], "9月":[],
+      "10月":["東","北西"], "11月":["北西"], "12月":["東","北西"],
+      "1月":[]
+    }},
+    "八白土星": { year: ["南東","南西","北西"], monthly: {
+      "2月":["南東","北西"], "3月":["南東"], "4月":["南西"], "5月":["北東","南西","北西"],
+      "6月":["西"], "7月":["南西","北西"], "8月":["南東","北西"], "9月":["南西"],
+      "10月":["南東","北西"], "11月":["南東","南西","北西"], "12月":["北東"],
+      "1月":["南西"]
+    }},
+    "九紫火星": { year: ["北東","東"], monthly: {
+      "2月":["東"], "3月":["北東","東","南東"], "4月":[], "5月":["北東"],
+      "6月":["東"], "7月":[], "8月":["南東"], "9月":["北東"],
+      "10月":["東","南東"], "11月":["南東"], "12月":["北東","東"],
+      "1月":["北東"]
+    }}
+  },
+  // 2027年: 九紫中宮 / 五黄殺:西 / 暗剣殺:東 / 歳破:東
+  "2027": {
+    "一白水星": { year: ["南西"], monthly: {
+      "2月":["南西"], "3月":[], "4月":["南西"], "5月":[],
+      "6月":["南西"], "7月":[], "8月":["南西"], "9月":[],
+      "10月":["南西"], "11月":[], "12月":["南西"],
+      "1月":[]
+    }},
+    "二黒土星": { year: ["南東","南西"], monthly: {
+      "2月":["南東","南西"], "3月":["南東"], "4月":["南西"], "5月":["南東"],
+      "6月":["南西"], "7月":["南東"], "8月":["南東","南西"], "9月":["南東"],
+      "10月":["南東","南西"], "11月":["南東"], "12月":["南西"],
+      "1月":["南東"]
+    }},
+    "三碧木星": { year: ["北西"], monthly: {
+      "2月":["北西"], "3月":[], "4月":["北西"], "5月":[],
+      "6月":[], "7月":["北西"], "8月":["北西"], "9月":[],
+      "10月":["北西"], "11月":[], "12月":[],
+      "1月":["北西"]
+    }},
+    "四緑木星": { year: ["北西"], monthly: {
+      "2月":["北西"], "3月":[], "4月":["北西"], "5月":[],
+      "6月":[], "7月":["北西"], "8月":["北西"], "9月":[],
+      "10月":["北西"], "11月":[], "12月":[],
+      "1月":["北西"]
+    }},
+    "五黄土星": { year: ["南東","南西","西"], monthly: {
+      "2月":["南東","南西"], "3月":["南東"], "4月":["南西"], "5月":["南東"],
+      "6月":["南西"], "7月":["南東","北西"], "8月":["南東","南西","北西"], "9月":["南東"],
+      "10月":["南東","南西","北西"], "11月":["南東"], "12月":["南西","北西"],
+      "1月":["南東","北西"]
+    }},
+    "六白金星": { year: ["南東","西","北西"], monthly: {
+      "2月":["南東","北西"], "3月":["南東"], "4月":["北西"], "5月":["南東"],
+      "6月":[], "7月":["南東","北西"], "8月":["南東","北西"], "9月":["南東"],
+      "10月":["南東","北西"], "11月":["南東"], "12月":["北西"],
+      "1月":["南東","北西"]
+    }},
+    "七赤金星": { year: ["南東","南西","北西"], monthly: {
+      "2月":["南東","南西","北西"], "3月":["南東"], "4月":["南西","北西"], "5月":["南東"],
+      "6月":["南西"], "7月":["南東","北西"], "8月":["南東","南西","北西"], "9月":["南東"],
+      "10月":["南東","南西","北西"], "11月":["南東"], "12月":["南西","北西"],
+      "1月":["南東","北西"]
+    }},
+    "八白土星": { year: ["南西","西"], monthly: {
+      "2月":["南西"], "3月":[], "4月":["南西"], "5月":[],
+      "6月":["南西"], "7月":["北西"], "8月":["南西","北西"], "9月":[],
+      "10月":["南西","北西"], "11月":[], "12月":["南西","北西"],
+      "1月":["北西"]
+    }},
+    "九紫火星": { year: ["南東","西"], monthly: {
+      "2月":["南東"], "3月":["南東"], "4月":[], "5月":["南東"],
+      "6月":[], "7月":["南東"], "8月":["南東"], "9月":["南東"],
+      "10月":["南東"], "11月":["南東"], "12月":[],
+      "1月":["南東"]
+    }}
+  },
+  // 2028年: 八白中宮 / 五黄殺:南西 / 暗剣殺:北東 / 歳破:北東
+  "2028": {
+    "一白水星": { year: ["南東","南","北"], monthly: {
+      "2月":["南東"], "3月":["南","北"], "4月":["南東"], "5月":[],
+      "6月":["南","北"], "7月":["南東"], "8月":["南","北"], "9月":["南東"],
+      "10月":[], "11月":["南","北"], "12月":["南東"],
+      "1月":[]
+    }},
+    "二黒土星": { year: ["東","南東","北西"], monthly: {
+      "2月":["東","南東","北西"], "3月":[], "4月":["東","南東","北西"], "5月":["東"],
+      "6月":[], "7月":["東","南東","北西"], "8月":[], "9月":["東","南東","北西"],
+      "10月":["東"], "11月":[], "12月":["東","南東","北西"],
+      "1月":["東"]
+    }},
+    "三碧木星": { year: ["南東","南","北"], monthly: {
+      "2月":["南東"], "3月":["南","北","南東"], "4月":["南東"], "5月":["南"],
+      "6月":["北"], "7月":["南東"], "8月":["南","北"], "9月":["南東"],
+      "10月":["南"], "11月":["北"], "12月":["南東"],
+      "1月":["南"]
+    }},
+    "四緑木星": { year: ["南東","北"], monthly: {
+      "2月":["南東"], "3月":["北"], "4月":["南東"], "5月":[],
+      "6月":["北"], "7月":["南東"], "8月":["北"], "9月":["南東"],
+      "10月":[], "11月":["北"], "12月":["南東"],
+      "1月":[]
+    }},
+    "五黄土星": { year: ["東","南東","北西"], monthly: {
+      "2月":["東","南東","北西"], "3月":["南"], "4月":["東","南東","北西"], "5月":["東","北西"],
+      "6月":["北"], "7月":["東","南東","北西"], "8月":["北西"], "9月":["東","南東","北西"],
+      "10月":["東","北西"], "11月":["北"], "12月":["東","南東","北西"],
+      "1月":["東","北西"]
+    }},
+    "六白金星": { year: ["南東"], monthly: {
+      "2月":["南東"], "3月":[], "4月":["南東"], "5月":[],
+      "6月":[], "7月":["南東"], "8月":[], "9月":["南東"],
+      "10月":[], "11月":[], "12月":["南東"],
+      "1月":[]
+    }},
+    "七赤金星": { year: ["南東","南","北西"], monthly: {
+      "2月":["南東","北西"], "3月":["南"], "4月":["南東","北西"], "5月":["北西"],
+      "6月":[], "7月":["南東","北西"], "8月":["北西"], "9月":["南東","北西"],
+      "10月":["北西"], "11月":[], "12月":["南東","北西"],
+      "1月":["北西"]
+    }},
+    "八白土星": { year: ["東","南東","北西"], monthly: {
+      "2月":["東","南東","北西"], "3月":[], "4月":["東","南東","北西"], "5月":["東"],
+      "6月":[], "7月":["東","南東","北西"], "8月":[], "9月":["東","南東","北西"],
+      "10月":["東"], "11月":[], "12月":["東","南東","北西"],
+      "1月":["東"]
+    }},
+    "九紫火星": { year: ["東","南東"], monthly: {
+      "2月":["東","南東"], "3月":["南東"], "4月":["東","南東"], "5月":["東"],
+      "6月":[], "7月":["東","南東"], "8月":[], "9月":["東","南東"],
+      "10月":["東"], "11月":[], "12月":["東","南東"],
+      "1月":["東"]
+    }}
+  }
+};
+
+// Star colors and symbols
+const STAR_INFO = {
+  "一白水星": { color: "#1A5276", symbol: "☵", element: "水" },
+  "二黒土星": { color: "#8B6914", symbol: "☷", element: "土" },
+  "三碧木星": { color: "#1B7A3D", symbol: "☳", element: "木" },
+  "四緑木星": { color: "#2E8B57", symbol: "☴", element: "木" },
+  "五黄土星": { color: "#B8860B", symbol: "☯", element: "土" },
+  "六白金星": { color: "#7B7B7B", symbol: "☰", element: "金" },
+  "七赤金星": { color: "#B87333", symbol: "☱", element: "金" },
+  "八白土星": { color: "#6B5B4F", symbol: "☶", element: "土" },
+  "九紫火星": { color: "#8B2252", symbol: "☲", element: "火" }
+};
+
+// Direction to angle mapping (from North, clockwise)
+const DIR_ANGLES = {
+  "北": 0, "北東": 45, "東": 90, "南東": 135,
+  "南": 180, "南西": 225, "西": 270, "北西": 315
+};
+
+const DIR_CODES = {
+  "北": "N", "北東": "NE", "東": "E", "南東": "SE",
+  "南": "S", "南西": "SW", "西": "W", "北西": "NW"
+};
+
+// ════════════════════════════════
+//  State
+// ════════════════════════════════
+let currentStar = null;
+let currentYear = "2026";
+let compassActive = false;
+let currentHeading = null;
+
+// ════════════════════════════════
+//  Init
+// ════════════════════════════════
+(function init() {
+  const yearSel = document.getElementById('yearSelect');
+  const monthSel = document.getElementById('monthSelect');
+  const daySel = document.getElementById('daySelect');
+
+  for (let y = 2028; y >= 1930; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    yearSel.appendChild(o);
+  }
+  for (let m = 1; m <= 12; m++) {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m;
+    monthSel.appendChild(o);
+  }
+  for (let d = 1; d <= 31; d++) {
+    const o = document.createElement('option');
+    o.value = d; o.textContent = d;
+    daySel.appendChild(o);
+  }
+
+  // Load from localStorage
+  const saved = localStorage.getItem('kippou_birthday');
+  if (saved) {
+    try {
+      const { year, month, day } = JSON.parse(saved);
+      yearSel.value = year;
+      monthSel.value = month;
+      daySel.value = day;
+      calculateStar(true);
+    } catch(e) {}
+  } else {
+    yearSel.value = 1990;
+  }
+})();
+
+// ════════════════════════════════
+//  Calculate Nine Star from birthdate
+// ════════════════════════════════
+function getHonmeiStar(year, month, day) {
+  // 九星気学: 立春(2/4頃)より前 → 前年扱い
+  let effectiveYear = year;
+  if (month === 1 || (month === 2 && day <= 3)) {
+    effectiveYear = year - 1;
+  }
+
+  // 本命星の計算: (11 - (西暦年 % 9)) % 9
+  // 結果: 1=一白, 2=二黒, ... 9=九紫 (0の場合は9)
+  let num = (11 - (effectiveYear % 9)) % 9;
+  if (num === 0) num = 9;
+
+  const names = [
+    "一白水星","二黒土星","三碧木星","四緑木星","五黄土星",
+    "六白金星","七赤金星","八白土星","九紫火星"
+  ];
+  return names[num - 1];
+}
+
+function calculateStar(silent = false) {
+  const year = parseInt(document.getElementById('yearSelect').value);
+  const month = parseInt(document.getElementById('monthSelect').value);
+  const day = parseInt(document.getElementById('daySelect').value);
+
+  if (!year || !month || !day) return;
+
+  // Save to localStorage
+  localStorage.setItem('kippou_birthday', JSON.stringify({ year, month, day }));
+
+  if (!silent) {
+    const msg = document.getElementById('savedMsg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 2000);
+  }
+
+  currentStar = getHonmeiStar(year, month, day);
+
+  // Determine current year for display
+  const now = new Date();
+  const nowYear = now.getFullYear();
+  if (nowYear >= 2026 && nowYear <= 2028) {
+    currentYear = String(nowYear);
+  } else {
+    currentYear = "2026";
+  }
+
+  showResult();
+}
+
+function showResult() {
+  const card = document.getElementById('resultCard');
+  const compassSec = document.getElementById('compassSection');
+  const monthlySec = document.getElementById('monthlySection');
+
+  card.style.display = 'block';
+  compassSec.style.display = 'block';
+  monthlySec.style.display = 'block';
+
+  // Star badge
+  const info = STAR_INFO[currentStar];
+  document.getElementById('starIcon').style.background = info.color;
+  document.getElementById('starIcon').textContent = info.symbol;
+  document.getElementById('starName').textContent = currentStar;
+
+  // Year selector
+  const selContainer = document.getElementById('yearSelector');
+  selContainer.innerHTML = '';
+  ['2026','2027','2028'].forEach(y => {
+    const btn = document.createElement('button');
+    btn.className = 'year-btn' + (y === currentYear ? ' active' : '');
+    btn.textContent = y + '年';
+    btn.onclick = () => { currentYear = y; showResult(); };
+    selContainer.appendChild(btn);
+  });
+
+  // Direction tags
+  const data = KIPPOU_DATA[currentYear][currentStar];
+  const yearDirs = data.year;
+  document.getElementById('yearLabel').textContent = currentYear + '年の年盤吉方位';
+
+  const tagsEl = document.getElementById('directionTags');
+  tagsEl.innerHTML = '';
+  if (yearDirs.length === 0) {
+    const tag = document.createElement('span');
+    tag.className = 'direction-tag none';
+    tag.textContent = 'なし';
+    tagsEl.appendChild(tag);
+  } else {
+    yearDirs.forEach(d => {
+      const tag = document.createElement('span');
+      tag.className = 'direction-tag kichi';
+      tag.textContent = d;
+      tagsEl.appendChild(tag);
+    });
+  }
+
+  // Update compass sectors
+  updateCompassSectors(yearDirs);
+
+  // Monthly table
+  updateMonthlyTable(data.monthly);
+
+  // Scroll to result
+  if (!document.getElementById('savedMsg').style.display) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function updateCompassSectors(dirs) {
+  const group = document.getElementById('sectorGroup');
+  group.innerHTML = '';
+
+  const cx = 150, cy = 150, r = 130;
+
+  // Update direction labels
+  document.querySelectorAll('.compass-dir').forEach(el => {
+    const dirCode = el.dataset.dir;
+    const dirName = Object.entries(DIR_CODES).find(([name, code]) => code === dirCode);
+    if (dirName && dirs.includes(dirName[0])) {
+      el.classList.add('kichi-dir');
+    } else {
+      el.classList.remove('kichi-dir');
+    }
+  });
+
+  // Draw sectors
+  dirs.forEach(dir => {
+    const angle = DIR_ANGLES[dir];
+    if (angle === undefined) return;
+
+    const startAngle = (angle - 22.5) * Math.PI / 180 - Math.PI / 2;
+    const endAngle = (angle + 22.5) * Math.PI / 180 - Math.PI / 2;
+
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`);
+    path.setAttribute('fill', 'url(#kichiGrad)');
+    path.setAttribute('stroke', 'rgba(46,125,79,0.2)');
+    path.setAttribute('stroke-width', '1');
+    group.appendChild(path);
+  });
+}
+
+function updateMonthlyTable(monthly) {
+  const body = document.getElementById('monthlyBody');
+  body.innerHTML = '';
+
+  const monthOrder = ["2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月","1月"];
+
+  document.getElementById('monthlyTitle').textContent = currentYear + '年 月別吉方位';
+
+  monthOrder.forEach(m => {
+    const dirs = monthly[m] || [];
+    const tr = document.createElement('tr');
+
+    const tdMonth = document.createElement('td');
+    tdMonth.className = 'month-cell';
+
+    // Highlight current month
+    const now = new Date();
+    const nowMonth = now.getMonth() + 1;
+    const mNum = parseInt(m);
+    const isCurrentYear = String(now.getFullYear()) === currentYear;
+    if (isCurrentYear && mNum === nowMonth) {
+      tdMonth.innerHTML = `<span style="color:var(--accent);font-weight:600;">▸ ${m}</span>`;
+    } else {
+      tdMonth.textContent = m;
+    }
+    tr.appendChild(tdMonth);
+
+    const tdDir = document.createElement('td');
+    const dirDiv = document.createElement('div');
+    dirDiv.className = 'dir-cell';
+    if (dirs.length === 0) {
+      const tag = document.createElement('span');
+      tag.className = 'mini-tag none-tag';
+      tag.textContent = 'なし';
+      dirDiv.appendChild(tag);
+    } else {
+      dirs.forEach(d => {
+        const tag = document.createElement('span');
+        tag.className = 'mini-tag';
+        tag.textContent = d;
+        dirDiv.appendChild(tag);
+      });
+    }
+    tdDir.appendChild(dirDiv);
+    tr.appendChild(tdDir);
+    body.appendChild(tr);
+  });
+}
+
+// ════════════════════════════════
+//  Compass
+// ════════════════════════════════
+function startCompass() {
+  const btn = document.getElementById('compassBtn');
+
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+
+    DeviceOrientationEvent.requestPermission()
+      .then(response => {
+        if (response === 'granted') {
+          activateCompass();
+          btn.style.display = 'none';
+        } else {
+          document.getElementById('compassStatus').textContent = '方位センサーの許可が必要です';
+        }
+      })
+      .catch(err => {
+        document.getElementById('compassStatus').textContent = 'センサーへのアクセスができません';
+        console.error(err);
+      });
+  } else if ('DeviceOrientationEvent' in window) {
+    activateCompass();
+    btn.style.display = 'none';
+  } else {
+    document.getElementById('compassStatus').textContent = 'お使いの端末ではコンパス機能が利用できません';
+    document.getElementById('compassNote').textContent = 'PCブラウザでは方位センサーは非対応です';
+  }
+}
+
+function activateCompass() {
+  compassActive = true;
+  document.getElementById('compassNote').textContent = '端末を水平にしてご利用ください';
+
+  window.addEventListener('deviceorientation', handleOrientation, true);
+  window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+}
+
+function handleOrientation(event) {
+  let heading;
+
+  if (event.webkitCompassHeading !== undefined) {
+    // iOS
+    heading = event.webkitCompassHeading;
+  } else if (event.alpha !== null) {
+    // Android - alpha is relative to device orientation
+    heading = (360 - event.alpha) % 360;
+  } else {
+    return;
+  }
+
+  currentHeading = heading;
+  updateCompassDisplay(heading);
+}
+
+function updateCompassDisplay(heading) {
+  const ring = document.getElementById('compassRing');
+  const needle = document.getElementById('compassNeedle');
+  const headingEl = document.getElementById('compassHeading');
+  const statusEl = document.getElementById('compassStatus');
+
+  // Rotate the ring (opposite to heading)
+  ring.style.transform = `rotate(${-heading}deg)`;
+
+  // Needle always points up (north relative to device)
+  needle.style.transform = `translate(-50%, -50%) rotate(${-heading}deg)`;
+  needle.style.top = '50%';
+
+  // Display heading
+  const rounded = Math.round(heading);
+  const dirName = getDirectionName(heading);
+  headingEl.innerHTML = `${dirName} ${rounded}<span class="deg">°</span>`;
+
+  // Check if facing a lucky direction
+  if (currentStar) {
+    const data = KIPPOU_DATA[currentYear][currentStar];
+    const yearDirs = data.year;
+    const facingKichi = yearDirs.filter(d => isInDirection(heading, DIR_ANGLES[d]));
+
+    if (facingKichi.length > 0) {
+      statusEl.className = 'compass-status good';
+      statusEl.innerHTML = '✦ 吉方位を向いています ✦';
+    } else {
+      statusEl.className = 'compass-status';
+      statusEl.textContent = getClosestKichiInfo(heading, yearDirs);
+    }
+  }
+}
+
+function isInDirection(heading, targetAngle) {
+  let diff = Math.abs(heading - targetAngle);
+  if (diff > 180) diff = 360 - diff;
+  return diff <= 22.5;
+}
+
+function getDirectionName(heading) {
+  const dirs = [
+    [0, "北"], [45, "北東"], [90, "東"], [135, "南東"],
+    [180, "南"], [225, "南西"], [270, "西"], [315, "北西"]
+  ];
+  let closest = dirs[0];
+  let minDiff = 360;
+  dirs.forEach(([angle, name]) => {
+    let diff = Math.abs(heading - angle);
+    if (diff > 180) diff = 360 - diff;
+    if (diff < minDiff) { minDiff = diff; closest = [angle, name]; }
+  });
+  return closest[1];
+}
+
+function getClosestKichiInfo(heading, kichiDirs) {
+  if (kichiDirs.length === 0) return '本年は年盤吉方位がありません';
+
+  let closest = null;
+  let minDiff = 360;
+  kichiDirs.forEach(d => {
+    const angle = DIR_ANGLES[d];
+    let diff = Math.abs(heading - angle);
+    if (diff > 180) diff = 360 - diff;
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = d;
+    }
+  });
+
+  if (minDiff <= 45) {
+    return `${closest}方位まであと${Math.round(minDiff)}°`;
+  }
+  return `最寄りの吉方位：${closest}`;
+}
+</script>
+
+</body>
+</html>
